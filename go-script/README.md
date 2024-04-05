@@ -12,4 +12,4 @@ Workflow of what happens when running `main.go`:
    - `resource_name_prefix`
 3. We will obtain the Cloudwatch Logs Group named `${resource_name_prefix}-cloudwatch-lg`.
 4. We will create a new log stream inside this group.
-5. We will send logs periodically to this data stream.
+5. We will send logs periodically to this log stream.
