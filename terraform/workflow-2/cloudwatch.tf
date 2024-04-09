@@ -1,8 +1,13 @@
-# Cloudwatch group that will have a subscription to the firehose delivery stream
+# Cloudwatch logs group that will receive the logs. It will have two subscriptions:
+# 1. One to be used by ESF.
+# 2. The other one to be used by Firehose.
 
 resource "aws_cloudwatch_log_group" "cloudwatch_log_group" {
   name = "${var.resource_name_prefix}-cloudwatch-lg"
 }
+
+
+## Subscribe firehose
 
 data "aws_iam_policy_document" "cloudwatch_policy_document" {
   statement {
@@ -10,7 +15,7 @@ data "aws_iam_policy_document" "cloudwatch_policy_document" {
 
     actions = ["firehose:*"]
 
-    resources = [aws_kinesis_firehose_delivery_stream.firehose_delivery_stream.arn]
+    resources = [var.firehose_arn]
   }
 }
 
@@ -43,26 +48,11 @@ resource "aws_iam_role_policy_attachment" "cloudwatch_role_policy" {
 }
 
 resource "aws_cloudwatch_log_subscription_filter" "cloudwatch_subscription" {
-  destination_arn = aws_kinesis_firehose_delivery_stream.firehose_delivery_stream.arn
+  destination_arn = var.firehose_arn
   filter_pattern  = ""
   log_group_name  = aws_cloudwatch_log_group.cloudwatch_log_group.name
   name            = "${var.resource_name_prefix}-cloudwatch-subscription"
   role_arn        = aws_iam_role.cloudwatch_role.arn
 }
 
-# Cloudwatch group for firehose error logging
-# The group has two streams, one for S3 errors and another for endpoint errors
 
-resource "aws_cloudwatch_log_group" "cloudwatch_log_group_errors" {
-  name = "${var.resource_name_prefix}-cloudwatch-lg-errors"
-}
-
-resource "aws_cloudwatch_log_stream" "cloudwatch_s3_errors" {
-  log_group_name = aws_cloudwatch_log_group.cloudwatch_log_group_errors.name
-  name           = "${var.resource_name_prefix}-stream-s3"
-}
-
-resource "aws_cloudwatch_log_stream" "cloudwatch_endpoint_errors" {
-  log_group_name = aws_cloudwatch_log_group.cloudwatch_log_group_errors.name
-  name           = "${var.resource_name_prefix}-stream-endpoint"
-}

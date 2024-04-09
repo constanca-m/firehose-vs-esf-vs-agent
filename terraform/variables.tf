@@ -18,12 +18,6 @@ variable "resource_name_prefix" {
   type        = string
 }
 
-variable "datastream_name" {
-  description = "Datastream name used by Firehose"
-  type        = string
-  default     = "logs-aws.cloudwatch_logs-default"
-}
-
 variable "es_url" {
   description = "Elasticsearch endpoint URL"
   type        = string
@@ -33,3 +27,11 @@ variable "es_access_key" {
   description = "Elasticsearch access key"
   type        = string
 }
+
+variable "test_workflows" {
+  description = "List of the workflows to test"
+  type        = list(number)
+  default     = []
+}
+
+

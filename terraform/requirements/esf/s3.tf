@@ -1,10 +1,3 @@
-# Firehose S3 backup bucket
-
-resource "aws_s3_bucket" "s3_bucket_firehose" {
-  bucket        = "${var.resource_name_prefix}-bucket"
-  force_destroy = true
-}
-
 # ESF S3 bucket settings
 
 locals {
@@ -13,7 +6,7 @@ locals {
     inputs : [
       {
         type : "cloudwatch-logs"
-        id : aws_cloudwatch_log_group.cloudwatch_log_group.arn
+        id : var.cloudwatch_log_group_arn
         outputs : [
           {
             type : "elasticsearch"
@@ -21,8 +14,6 @@ locals {
               elasticsearch_url : var.es_url
               api_key : var.es_access_key
               es_datastream_name : "logs-esf.test-default"
-              #batch_max_actions : 500 # optional: default value is 500
-              #batch_max_bytes : 10485760 # optional: default value is 10485760
             }
           }
         ]
