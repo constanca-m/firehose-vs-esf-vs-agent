@@ -15,5 +15,5 @@ variable "es_access_key" {
 
 variable "cloudwatch_log_group_arn" {
   description = "Cloudwatch logs group ARN to be used for the input in the config.yaml file"
-  type = string
+  type        = string
 }
