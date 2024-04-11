@@ -10,16 +10,16 @@ module "firehose_requirements" {
   datastream_name = "logs-firehose-default"
 }
 
-# Deploy the necessary resources to use ESF
-module "esf_requirements" {
-  source = "./requirements/esf"
+# Create a cloudfront distribution and S3 bucket to be used in workflow 1
+module "cloudfront_distribution" {
+  source = "./workflow-1"
 
-  count = 0
+  # Create only if 1 is present in test_workflows
+  count = contains(var.test_workflows, 1) ? 1 : 0
 
-  resource_name_prefix     = var.resource_name_prefix
-  cloudwatch_log_group_arn = "" # TODO: likely the output of module cloudwatch_logs_group
-  es_access_key            = var.es_access_key
-  es_url                   = var.es_url
+  resource_name_prefix = var.resource_name_prefix
+
+  depends_on = [module.firehose_requirements]
 }
 
 # Create a cloudwatch logs group to be used in workflow 2
@@ -35,6 +35,23 @@ module "cloudwatch_logs_group" {
 
   depends_on = [module.firehose_requirements]
 }
+
+# Deploy the necessary resources to use ESF
+module "esf_requirements" {
+  source = "./requirements/esf"
+
+  # Change this to 1 if you also want to create the S3 bucket for ESF. Go to https://github.com/elastic/terraform-elastic-esf
+  # for the ESF terraform files.
+  count = 0
+
+  resource_name_prefix     = var.resource_name_prefix
+  cloudwatch_log_group_arn = "${module.cloudwatch_logs_group[0].cloudwatch_logs_group_arn}:*"
+  es_access_key            = var.es_access_key
+  es_url                   = var.es_url
+
+  depends_on = [module.cloudwatch_logs_group]
+}
+
 
 # Create necessary resources for workflow 3
 module "network_firewall_logs" {

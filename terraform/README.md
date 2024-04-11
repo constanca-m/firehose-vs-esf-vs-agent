@@ -15,7 +15,16 @@
 ## Workflows
 
 Workflow 1:
-TODO
+```mermaid
+flowchart LR
+    cloufront[Cloudfront Logs] --> s3[S3]
+    s3[S3] --> lambda[Lambda]
+    lambda[Lambda] --> firehose[Firehose]
+    firehose[Firehose] --> elastic[Elastic Cloud]
+
+    s3[S3] --> ESF[ESF]
+    ESF[ESF] --> elastic[Elastic Cloud]
+```
 
 Workflow 2:
 
