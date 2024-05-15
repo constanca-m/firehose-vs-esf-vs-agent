@@ -12,10 +12,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 )
 
-const terraformDir = "../terraform"
+const terraformDir = "../../terraform"
 
 var variables = make(map[string]string)
-var workflows = make(map[string]bool)
 
 func readVariables() error {
 	files, err := os.ReadDir(terraformDir)
@@ -39,20 +38,20 @@ func readVariables() error {
 						value := strings.TrimSpace(variable[1])
 
 						// Check if it is the workflow list
-						if string(value[0]) == `[` {
-							log.Printf("\tFound variable %s with value %s.", name, value)
-							value = strings.Trim(value, `[]`)
-							numbers := strings.Split(value, ",")
-							for _, number := range numbers {
-								number = strings.TrimSpace(number)
-								workflows[number] = true
-							}
-						} else {
-							// otherwise it is a string
-							value = strings.Trim(value, `\"\"`)
-							log.Printf("\tFound variable %s with value %s.", name, value)
-							variables[name] = value
-						}
+						//if string(value[0]) == `[` {
+						//	log.Printf("\tFound variable %s with value %s.", name, value)
+						//	value = strings.Trim(value, `[]`)
+						//	numbers := strings.Split(value, ",")
+						//	for _, number := range numbers {
+						//		number = strings.TrimSpace(number)
+						//		workflows[number] = true
+						//	}
+						//} else {
+						// otherwise it is a string
+						value = strings.Trim(value, `\"\"`)
+						log.Printf("\tFound variable %s with value %s.", name, value)
+						variables[name] = value
+						//}
 					}
 				}
 				_ = file.Close()
@@ -108,19 +107,17 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if len(workflows) == 0 {
-		log.Fatal("There are no workflows to test.")
-	}
-
 	sess := createSession()
 
-	if _, exists := workflows["1"]; exists {
-		log.Println("Testing workflow-1.")
+	workflow := variables["test_workflow"]
+	log.Printf("Testing workflow %s.", workflow)
+	switch workflow {
+	case "1":
 		produceCloudfrontLogs(sess)
+	case "2":
+		produceCloudwatchLogs(sess)
+	default:
+		log.Fatalf("Impossible workflow %s.", workflow)
 	}
 
-	if _, exists := workflows["2"]; exists {
-		log.Println("Testing workflow-2.")
-		produceCloudwatchLogs(sess)
-	}
 }

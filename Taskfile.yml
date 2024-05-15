@@ -1,0 +1,41 @@
+version: '3'
+
+dotenv: ['.env', '{{.ENV}}/.env.', '{{.HOME}}/.env']
+
+tasks:
+  default:
+    cmds:
+      - task: delete-esf
+      - task: terraform
+      # We need the modules for the workflow applied before we can apply the ESF module
+      - task: setup-esf
+      - task: terraform
+      - task: run-go-script
+
+  setup-esf:
+    internal: true
+    cmds:
+      - ./scripts/bash/setup_esf.sh {{.DOWNLOAD}} {{.ESF_GIT_REPOSITORY}} {{.ESF_LOCAL_DIRECTORY}}
+
+  delete-esf:
+    internal: true
+    cmds:
+      - ./scripts/bash/delete_esf.sh
+
+  terraform:
+    internal: true
+    dir: terraform
+    cmds:
+      - terraform init
+      - terraform apply -auto-approve
+
+  run-go-script:
+    internal: true
+    dir: scripts/go
+    cmds:
+      - go run .
+
+  destroy:
+    dir: terraform
+    cmds:
+      - terraform destroy -auto-approve

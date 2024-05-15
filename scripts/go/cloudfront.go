@@ -52,7 +52,7 @@ func produceCloudfrontLogs(sess *session.Session) {
 			_, _ = client.Do(request)
 		}
 
-		sleep := 5 * time.Minute
+		sleep := 120 * time.Second
 		log.Println("\tSleeping for ", sleep.String(), "...")
 		time.Sleep(sleep)
 

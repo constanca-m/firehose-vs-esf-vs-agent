@@ -1,29 +1,96 @@
+**Under construction...**
+
 Issue: https://github.com/elastic/obs-infraobs-team/issues/1337.
 
-**Notes about the current state of this repository**:
+## Usage
 
-Most directories have a README file explaining what is happening, so I will not be mentioning that in these notes. `terraform/README.md` mentions the workflows.
+### Requirements
 
-The worflow:
+- Taskfile
+- Terraform
+
+
+### Variables configuration
+
+There are two files you can change to update your configuration.
+
+The first one is the `.env` file. It supports these variables:
+- `DOWNLOAD`: set it to true if you want to download the ESF terraform directory, or false if you want to use local files for it.
+- `ESF_LOCAL_DIRECTORY`: path to the local files for ESF terraform. If `DOWNLOAD` is set to `true`, it is not considered.
+- `ESF_GIT_REPOSITORY`: repository where ESF terraform is, considered if `DOWNLOAD` set to `true`.
+
+The second file is the one you place inside `terraform` directory, with suffix `auto.tfvars`. Here you can need to place the values for all terraform variables. You can find all possible variables and respective descriptions in `terraform/variables.tf`. **Make sure to place all required variables in this file**, they will be necessary for all tasks to run successfully. Example of correct configuration:
+
+```terraform
+aws_region     = "eu-west-2"
+aws_access_key = "..."
+aws_secret_key = "..."
+
+resource_name_prefix = "constanca-tests"
+
+es_url        = "..."
+es_access_key = "..."
+
+esf_release_version = "lambda-v1.9.0"
+
+test_workflow = 2
+```
+
+### Run
+
+To deploy all resources to make a workflow run:
+
+```bash
+task
+```
+
+
+To destroy the resources deployed by terraform, run:
+```bash
+task destroy
+```
+
+## Workflows
+
+When you run the command `task`, there are two things happening:
+1. Terraform runs to deploy all AWS necessary resources.
+2. Go code runs to send data to those AWS resources.
+
+You can pick the data workflow to run by setting the terraform variable `test_workflow`. You just have to define the number of the workflow to run.
+
+The possible options are shown bellow.
+
+### Workflow 1
+
+```mermaid
+flowchart LR
+    cloufront[Cloudfront Logs] --> s3[S3]
+    s3[S3] --> lambda[Lambda]
+    lambda[Lambda] --> firehose[Firehose]
+    firehose[Firehose] --> elastic[Elastic Cloud]
+
+    s3[S3] --> sqs[SQS]
+    sqs[SQS] --> ESF[ESF]
+    ESF[ESF] --> elastic[Elastic Cloud]
+```
+Status: doesn't work for ESF and Firehose at the same time.
+
+Note: not possible to have event trigger twice, ESF and Firehose cannot be set at the same time.
+
+### Workflow 2
 
 ```mermaid
 flowchart LR
     cloudwatch[Cloudwatch Logs] --> firehose[Firehose]
+    cloudwatch[Cloudwatch Logs] --> esf[ESF]
     firehose[Firehose] --> elastic[Elastic Cloud]
+    esf[ESF] --> elastic[Elastic Cloud]
 ```
 
-Is working. To test it, do the following:
+Status: working.
 
-1. Go to `terraform` directory.
-2. Create a file to set the variables and make sure `test_workflows` variables includes number `2`.
-3. Run `terraform init` and `terraform apply`.
-4. Go to `go-script` directory.
-5. Run the `main.go`, which will cause the logs in the cloudwatch logs group and you should be able to see data in Discover every 5min.
+### Workflow 3
 
-You can also use this with ESF. You need to go to [this](https://github.com/elastic/elastic-serverless-forwarder) repository and use the files from there. It should work fine.
-
-
-The workflow
 ```mermaid
 flowchart LR
     network[Network Firewall Logs] --> firehose[Firehose]
@@ -34,29 +101,31 @@ flowchart LR
     ESF[ESF] --> elastic[Elastic Cloud]
 ```
 
-is under construction. The directory `terraform/workflow-3` currently deploys a VPC with a private subnet and a Firewall associated to the VPC. 
-1. **TODO**: How to get logs in the Firewall? Is it possible to send the logs directly to an already created resource and see them there? Should more resources be created?
+Status: figuring out how to set network firewall logs...
+
+## Repository walkover
 
 
-The workflow
+### `scripts` directory
 
-```mermaid
-flowchart LR
-    cloufront[Cloudfront Logs] --> s3[S3]
-    s3[S3] --> lambda[Lambda]
-    lambda[Lambda] --> firehose[Firehose]
-    firehose[Firehose] --> elastic[Elastic Cloud]
+This directory has two folders, `bash` and `go`.
 
-    s3[S3] --> ESF[ESF]
-    ESF[ESF] --> elastic[Elastic Cloud]
-```
+`bash` directory contains all bash scripts that are being used by our taskfile.
 
-is also under construction. The cloudfront logs are already being sent to S3, you just need to run `main.go` again and make sure that the `variables.tf` file inside `terraform` directory has `test_workflows` variable with number `1`.
-1. **TODO**: Test ESF with S3 input.
-2. **TODO**: How should the lambda function look like? Code is in `terraform/workflow-1/lambda-code/lambda.py`. Setting the correct code should be enough complete the workflow on firehose side.
+`go` directory contains the go code used to produce data in our AWS resources. It works as follows:
+
+1. We will enter the directory defined in `terraformDir`:
+    1. We will open all files `*.auto.tfvars`.
+    2. We will read every variable inside these files and save them in a map, both the key and the value of the variable.
+2. We will create a new AWS session. For this, make sure that the following variables were present in the `*.auto.tfvars` files:
+    - `aws_region`
+    - `aws_access_key`
+    - `aws_secret_key`
+    - `resource_name_prefix`
+3. If `1` is included `test_workflows` then:
+4. If `2` is included `test_workflows` then:
+   1. We will obtain the Cloudwatch Logs Group named `${resource_name_prefix}-cloudwatch-lg`.
+   2. We will create a new log stream inside this group.
+   3. We will send logs periodically to this log stream.
 
 
-Some thoughts and things to figure out:
-- It does not seem possible to use the ESF repository as source in a terraform module. How to deploy ESF from the terraform files of this directory, so we can have the workflow working for both firehose and ESF with just 2 commands?
-- Change the AWS provider to not receive static credentials. Maybe use .vault file.
-- Cloudfront logs are being sent every 5 min (see `go-script/cloudfront.go`). We are using standard logs, not real time logs, so I am trying to make sure every time we send logs, they are placed in a new document in the S3 bucket. Should sleep time be decreased to faster testing?

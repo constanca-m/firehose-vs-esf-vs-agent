@@ -52,7 +52,7 @@ resource "aws_iam_role_policy_attachment" "firehose_permissions" {
 
 resource "aws_kinesis_firehose_delivery_stream" "firehose_delivery_stream" {
   destination = "http_endpoint"
-  name        = "${var.resource_name_prefix}-firehose-ds"
+  name        = "benchmarking-firehose-ds"
 
   http_endpoint_configuration {
     name       = "Elastic"

@@ -1,4 +1,4 @@
-module go-script
+module _go
 
 go 1.21
 

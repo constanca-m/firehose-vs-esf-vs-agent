@@ -28,10 +28,14 @@ variable "es_access_key" {
   type        = string
 }
 
-variable "test_workflows" {
-  description = "List of the workflows to test"
-  type        = list(number)
-  default     = []
+variable "esf_release_version" {
+  description = "ESF release version"
+  type        = string
+}
+
+variable "test_workflow" {
+  description = "Workflow to test"
+  type        = number
 }
 
 

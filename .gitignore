@@ -6,3 +6,6 @@ terraform/*.auto.tfvars
 
 terraform/.*
 
+values.auto.tfvars
+
+terraform/requirements/esf

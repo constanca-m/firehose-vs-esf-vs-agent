@@ -1,1 +1,0 @@
-ESF requires a S3 bucket with a `config.yaml` file.
