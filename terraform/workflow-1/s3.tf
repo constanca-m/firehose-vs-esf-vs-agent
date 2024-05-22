@@ -4,7 +4,7 @@ resource "aws_s3_bucket" "s3_bucket_cloudfront_origin" {
   force_destroy = true
 }
 
-resource "aws_s3_bucket_public_access_block" "example" {
+resource "aws_s3_bucket_public_access_block" "access_block" {
   bucket                  = aws_s3_bucket.s3_bucket_cloudfront_origin.id
   block_public_acls       = false
   block_public_policy     = false
@@ -38,20 +38,24 @@ resource "aws_s3_bucket_ownership_controls" "cloudfront_logs_controls" {
 }
 
 # Associate S3 logs notification with lambda function
-#resource "aws_s3_bucket_notification" "bucket_notification_lambda" {
-#  bucket = aws_s3_bucket.s3_bucket_cloudfront_logs.id
-#
-#  lambda_function {
-#    lambda_function_arn = aws_lambda_function.function.arn
-#    events              = ["s3:ObjectCreated:*"]
-#    filter_suffix       = ".gz"
-#  }
-#
-#  depends_on = [aws_lambda_permission.allow_bucket]
-#}
+resource "aws_s3_bucket_notification" "bucket_notification_lambda" {
+  count = var.create_firehose
+
+  bucket = aws_s3_bucket.s3_bucket_cloudfront_logs.id
+
+  lambda_function {
+    lambda_function_arn = aws_lambda_function.function[0].arn
+    events              = ["s3:ObjectCreated:*"]
+    filter_suffix       = ".gz"
+  }
+
+  depends_on = [aws_lambda_permission.allow_bucket]
+}
 
 # Associate S3 logs notification with queue
-resource "aws_s3_bucket_notification" "bucket_notification" {
+resource "aws_s3_bucket_notification" "bucket_notification_queue" {
+  count = var.create_firehose == 0 ? 1 : 0
+
   bucket = aws_s3_bucket.s3_bucket_cloudfront_logs.id
 
   queue {

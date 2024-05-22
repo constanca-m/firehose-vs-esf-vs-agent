@@ -26,6 +26,8 @@ cat >> modules.tf <<EOF
 
 # Deploy the necessary resources to use ESF
 module "esf_requirements" {
+  count = var.create_firehose == 0 ? 1 : 0
+
   source = "./requirements/esf"
 
   lambda-name     = "\${var.resource_name_prefix}-esf"
@@ -65,12 +67,30 @@ module "esf_requirements" {
           }
         ]
       }
+    ],
+    [
+      for firewall-logs in module.network_firewall_logs :
+      {
+        id : "\${firewall-logs.firewall_logs_group_arn}:*"
+        type : "cloudwatch-logs"
+        outputs = [
+          {
+            type = "elasticsearch"
+            args = {
+              elasticsearch_url  = var.es_url
+              api_key            = var.es_access_key
+              es_datastream_name = "logs-esf.cloudwatch-default"
+            }
+          }
+        ]
+      }
     ]
   )
 
   s3-buckets = [for cf in module.cloudfront_distribution : cf.s3_bucket_logs_arn]
 
-  depends_on = [module.cloudwatch_logs_group, module.cloudfront_distribution]
+  depends_on = [module.cloudwatch_logs_group, module.cloudfront_distribution, module.network_firewall_logs]
 }
 # End ESF module
+
 EOF

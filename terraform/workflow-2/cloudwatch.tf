@@ -1,15 +1,12 @@
-# Cloudwatch logs group that will receive the logs. It will have two subscriptions:
-# 1. One to be used by ESF.
-# 2. The other one to be used by Firehose.
-
+# Cloudwatch logs group that will receive the logs.
 resource "aws_cloudwatch_log_group" "cloudwatch_log_group" {
   name = "${var.resource_name_prefix}-cloudwatch-lg"
 }
 
-
 ## Subscribe firehose
-
 data "aws_iam_policy_document" "cloudwatch_policy_document" {
+  count = var.create_firehose == 0 ? 0 : 1
+
   statement {
     effect = "Allow"
 
@@ -20,11 +17,15 @@ data "aws_iam_policy_document" "cloudwatch_policy_document" {
 }
 
 resource "aws_iam_policy" "cloudwatch_policy" {
+  count = var.create_firehose == 0 ? 0 : 1
+
   name   = "${var.resource_name_prefix}-cloudwatch-policy"
-  policy = data.aws_iam_policy_document.cloudwatch_policy_document.json
+  policy = data.aws_iam_policy_document.cloudwatch_policy_document[0].json
 }
 
 data "aws_iam_policy_document" "cloudwatch_role_document" {
+  count = var.create_firehose == 0 ? 0 : 1
+
   statement {
     effect = "Allow"
 
@@ -38,21 +39,27 @@ data "aws_iam_policy_document" "cloudwatch_role_document" {
 }
 
 resource "aws_iam_role" "cloudwatch_role" {
+  count = var.create_firehose == 0 ? 0 : 1
+
   name               = "${var.resource_name_prefix}-cloudwatch-role"
-  assume_role_policy = data.aws_iam_policy_document.cloudwatch_role_document.json
+  assume_role_policy = data.aws_iam_policy_document.cloudwatch_role_document[0].json
 }
 
 resource "aws_iam_role_policy_attachment" "cloudwatch_role_policy" {
-  policy_arn = aws_iam_policy.cloudwatch_policy.arn
-  role       = aws_iam_role.cloudwatch_role.name
+  count = var.create_firehose == 0 ? 0 : 1
+
+  policy_arn = aws_iam_policy.cloudwatch_policy[0].arn
+  role       = aws_iam_role.cloudwatch_role[0].name
 }
 
 resource "aws_cloudwatch_log_subscription_filter" "cloudwatch_subscription" {
+  count = var.create_firehose == 0 ? 0 : 1
+
   destination_arn = var.firehose_arn
   filter_pattern  = ""
   log_group_name  = aws_cloudwatch_log_group.cloudwatch_log_group.name
   name            = "${var.resource_name_prefix}-cloudwatch-subscription"
-  role_arn        = aws_iam_role.cloudwatch_role.arn
+  role_arn        = aws_iam_role.cloudwatch_role[0].arn
 }
 
 

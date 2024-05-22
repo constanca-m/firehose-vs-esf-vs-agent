@@ -116,6 +116,10 @@ func main() {
 		produceCloudfrontLogs(sess)
 	case "2":
 		produceCloudwatchLogs(sess)
+	case "3":
+		//produceEC2Logs(sess)
+		log.Println("Workflow 3 creates logs on its own.")
+		return
 	default:
 		log.Fatalf("Impossible workflow %s.", workflow)
 	}

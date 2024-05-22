@@ -1,6 +1,8 @@
 
 # Deploy the necessary resources to use firehose
 module "firehose_requirements" {
+  count = var.create_firehose
+
   source               = "./requirements/firehose"
   resource_name_prefix = var.resource_name_prefix
   es_access_key        = var.es_access_key
@@ -16,7 +18,8 @@ module "cloudfront_distribution" {
   count = var.test_workflow == 1 ? 1 : 0
 
   resource_name_prefix = var.resource_name_prefix
-  firehose_arn         = module.firehose_requirements.firehose_arn
+  firehose_arn         = var.create_firehose == 0 ? "" : module.firehose_requirements[0].firehose_arn
+  create_firehose      = var.create_firehose
 
   depends_on = [module.firehose_requirements]
 }
@@ -30,8 +33,9 @@ module "cloudwatch_logs_group" {
   count = var.test_workflow == 2 ? 1 : 0
 
   aws_region           = var.aws_region
-  firehose_arn         = module.firehose_requirements.firehose_arn
+  firehose_arn         = var.create_firehose == 0 ? "" : module.firehose_requirements[0].firehose_arn
   resource_name_prefix = var.resource_name_prefix
+  create_firehose      = var.create_firehose
 
   depends_on = [module.firehose_requirements]
 }
@@ -45,6 +49,22 @@ module "network_firewall_logs" {
   count = var.test_workflow == 3 ? 1 : 0
 
   resource_name_prefix          = var.resource_name_prefix
-  firehose_delivery_stream_name = module.firehose_requirements.firehose_delivery_stream_name
+  firehose_delivery_stream_name = var.create_firehose == 0 ? "" : module.firehose_requirements[0].firehose_delivery_stream_name
+  firehose_arn                  = var.create_firehose == 0 ? "" : module.firehose_requirements[0].firehose_arn
   depends_on                    = [module.firehose_requirements]
+  create_firehose               = var.create_firehose
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+

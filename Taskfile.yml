@@ -3,14 +3,29 @@ version: '3'
 dotenv: ['.env', '{{.ENV}}/.env.', '{{.HOME}}/.env']
 
 tasks:
-  default:
+  run-firehose:
     cmds:
-      - task: delete-esf
-      - task: terraform
-      # We need the modules for the workflow applied before we can apply the ESF module
-      - task: setup-esf
+      - task: delete-esf # Delete ESF module from the terraform files if it is present. We do not want to apply it.
       - task: terraform
       - task: run-go-script
+
+  run-esf:
+    cmds:
+      - task: delete-esf # Delete ESF module from the terraform files if it is present. We do not want to apply it right now.
+      - task: terraform
+      - task: setup-esf # Add the ESF module now that its input variables are known
+      - task: terraform-esf
+      - task: run-go-script
+
+  # This causes a bug: https://github.com/hashicorp/terraform-provider-aws/issues/19583
+  #default:
+  #  cmds:
+  #    - task: delete-esf
+  #    - task: terraform
+  #    # We need the modules for the workflow applied before we can apply the ESF module
+  #    - task: setup-esf
+  #    - task: terraform
+  #    - task: run-go-script
 
   setup-esf:
     internal: true
@@ -28,6 +43,13 @@ tasks:
     cmds:
       - terraform init
       - terraform apply -auto-approve
+
+  terraform-esf:
+    internal: true
+    dir: terraform
+    cmds:
+      - terraform init
+      - terraform apply -target=module.esf_requirements -auto-approve
 
   run-go-script:
     internal: true
