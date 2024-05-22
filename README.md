@@ -1,7 +1,6 @@
 
 Issue: https://github.com/elastic/obs-infraobs-team/issues/1337.
 
-## Usage
 
 ### Requirements
 
